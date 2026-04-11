@@ -5,7 +5,7 @@ from pypdf import PdfReader
 
 # ------------------- CONFIG -------------------
 API_URL = "https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6"
-HF_TOKEN = st.secrets["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"]  # <-- put your token here
+HF_TOKEN = "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"  # <-- put your token here
 
 headers = {
     "Authorization": f"Bearer {HF_TOKEN}",
