@@ -22,7 +22,13 @@ def extract_text_from_pdf(pdf_file):
 
 
 def summarize(text):
-    payload = {"inputs": text}
+    payload = {
+    "inputs": text,
+    "parameters": {
+        "max_length": 120,
+        "min_length": 40,       
+        "length_penalty": 2.0,  
+        "num_beams": 4}}
 
     r = requests.post(API_URL, headers=headers, json=payload)
 
