@@ -25,7 +25,7 @@ def summarize(text):
     payload = {
     "inputs": text,
     "parameters": {
-        "max_length": 120,
+        "max_length": 80,
         "min_length": 40,       
         "length_penalty": 2.0,  
         "num_beams": 4}}
