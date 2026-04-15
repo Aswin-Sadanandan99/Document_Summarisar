@@ -6,7 +6,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 
 # Download once (safe if already present)
-nltk.download('punkt')
+nltk.download('punkt_tab')
 
 # ------------------- CONFIG -------------------
 API_URL = "https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6"
