@@ -2,10 +2,15 @@ import streamlit as st
 import requests
 import time
 from pypdf import PdfReader
+import nltk
+from nltk.tokenize import sent_tokenize
+
+# Download once (safe if already present)
+nltk.download('punkt')
 
 # ------------------- CONFIG -------------------
 API_URL = "https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6"
-HF_TOKEN = st.secrets["HF_TOKEN"]  # <-- put your token here
+HF_TOKEN = st.secrets["HF_TOKEN"]
 
 headers = {
     "Authorization": f"Bearer {HF_TOKEN}",
@@ -17,18 +22,48 @@ def extract_text_from_pdf(pdf_file):
     reader = PdfReader(pdf_file)
     text = ""
     for page in reader.pages:
-        text += page.extract_text()
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + " "
     return text
+
+
+def chunk_text(text, max_chunk_chars=1200):
+    sentences = sent_tokenize(text)
+    chunks = []
+    current_chunk = ""
+
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) <= max_chunk_chars:
+            current_chunk += " " + sentence
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = sentence
+
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+
+def clean_summary(summary):
+    sentences = sent_tokenize(summary)
+    if not summary.strip().endswith((".", "!", "?")) and len(sentences) > 1:
+        return " ".join(sentences[:-1])
+    return summary
 
 
 def summarize(text):
     payload = {
-    "inputs": text,
-    "parameters": {
-        "max_length": 40,
-        "min_length": 10,       
-        "length_penalty": 2.0,  
-        "num_beams": 4}}
+        "inputs": text,
+        "parameters": {
+            "max_length": 120,
+            "min_length": 40,
+            "length_penalty": 1.5,
+            "num_beams": 6,
+            "early_stopping": True
+        }
+    }
 
     r = requests.post(API_URL, headers=headers, json=payload)
 
@@ -44,14 +79,8 @@ def summarize(text):
         time.sleep(data["estimated_time"])
         return summarize(text)
 
-    return data[0]["summary_text"]
-
-
-def chunk_text(text, chunk_size=1000):
-    chunks = []
-    for i in range(0, len(text), chunk_size):
-        chunks.append(text[i:i + chunk_size])
-    return chunks
+    raw_summary = data[0]["summary_text"]
+    return clean_summary(raw_summary)
 
 
 # ------------------- STREAMLIT UI -------------------
@@ -64,7 +93,6 @@ text_input = ""
 
 if option == "Upload PDF":
     uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-
     if uploaded_file is not None:
         with st.spinner("Extracting text from PDF..."):
             text_input = extract_text_from_pdf(uploaded_file)
